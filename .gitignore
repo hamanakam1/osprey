@@ -1,0 +1,25 @@
+# Build products
+.build/
+.build-*/
+.swiftpm/
+dist/
+*.xcodeproj
+*.xcworkspace
+
+# Editor and OS noise
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
+
+# Local Osprey state (never commit captured terminal output)
+.osprey/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+evidence.sqlite
+
+# Local scratch
+*.log
+tmp/

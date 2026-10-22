@@ -1,0 +1,54 @@
+name: CI
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: build and test (macOS ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    env:
+      # Use the full Xcode toolchain so that the Swift Testing macros resolve.
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-14
+          - macos-15
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Show the toolchain
+        run: swift --version
+
+      - name: Cache SwiftPM build products
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/.cache/org.swift.swiftpm
+          key: ${{ runner.os }}-spm-${{ matrix.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-${{ matrix.os }}-
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test
+
+      - name: Check the public content
+        run: python3 scripts/public_content_guard.py
