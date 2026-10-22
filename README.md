@@ -70,7 +70,7 @@ Status: pre-release. The command surface and the on-disk format may still change
 
 **Menu-bar companion**
 
-`OspreyBar` is a small SwiftUI menu-bar app that surfaces the same local state: how many tabs are open, how much evidence is stored, how many proposals are waiting, and which build is installed.
+`OspreyBar` is a small SwiftUI menu-bar app. It shows how many proposals are waiting, how much evidence is stored, and which Taskrivet build is installed. You can approve or withdraw a proposal from the menu. Nothing happens on its own.
 
 ## What it does not do
 

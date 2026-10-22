@@ -42,7 +42,7 @@ This is the first public state of Osprey. The entries describe what exists today
 
 ### Menu-bar companion
 
-- `OspreyBar`, a SwiftUI menu-bar application that shows the same local state as the command line: the tabs the session service owns, how much evidence is stored, how many proposals are waiting, and which build is installed.
+- `OspreyBar`, a SwiftUI menu-bar application that shows the same local state as the command line: how many proposals are waiting, how much evidence is stored, and which Taskrivet build is installed. A proposal can be approved or withdrawn from the menu, one click at a time.
 
 ### Documentation
 

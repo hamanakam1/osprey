@@ -15,10 +15,9 @@ dist/
 
 # Local Osprey state (never commit captured terminal output)
 .osprey/
-*.sqlite
+evidence.sqlite
 *.sqlite-wal
 *.sqlite-shm
-evidence.sqlite
 
 # Local scratch
 *.log

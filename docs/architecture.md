@@ -180,6 +180,19 @@ Runs one capture.
 
 The coordinator writes to the evidence store and nowhere else. It has no ledger client, so it cannot write to the ledger even if it wanted to.
 
+### `Sources/osprey/`
+
+The command line. It has two files of its own: an option parser and the command dispatcher.
+
+The option parser reads `--key value`, `--key=value`, and `--flag`. It has no third-party dependency, because the package has none. Repeated options, such as `--terminal`, are collected in order.
+
+The dispatcher maps a command name to a handler. Each handler parses its arguments, calls into `OspreyCore`, and prints the result. Two behaviours are worth knowing:
+
+- `osprey approve` without `--yes` prints the record it would write and stops. Applying a draft is a separate, explicit act.
+- The reporting commands accept `--json` and print machine-readable output instead of text.
+
+Errors are reported on standard error with the `osprey:` prefix, and the exit status is non-zero. A write that the ledger did not confirm exits with status 2, so a script can tell it apart from an ordinary failure.
+
 ## What crosses a boundary
 
 | Boundary | What crosses | Direction | Mechanism | Notes |
@@ -187,7 +200,7 @@ The coordinator writes to the evidence store and nowhere else. It has no ledger 
 | Taskrivet session service | Terminal output, tab snapshots | In | Unix stream socket, mode 0600 | One JSON object per line. Read-only: `hello` and `list` only. |
 | Session token file | The token string | In | Regular file read | Group and other permission bits must be clear. |
 | Osprey evidence store | Redacted text, proposals, receipts | In and out | SQLite file | Written only after redaction. |
-| Taskrivet ledger | A checkpoint or failure record | Out | Subprocess with an explicit argument vector | Only after `osprey approve`. Verified by readback. |
+| Taskrivet ledger | A checkpoint or failure record | Out | Subprocess with an explicit argument vector | Only after `osprey approve --yes`. Verified by readback. |
 | Taskrivet app bundle | The installed application | Into the machine | File copy, file move | A backup is taken first. |
 | Python interpreter and core | The Taskrivet Python package | Into the machine | Subprocess | Used for the ledger and the smoke test. |
 | The network | Nothing | Not crossed | — | No networking code exists. |
@@ -209,8 +222,8 @@ The rule is that a failure leaves the machine in a state a person can reason abo
 | The token is rejected | The connection is closed. Nothing is stored. |
 | No tabs match the selection | The capture stops with a message. Nothing is stored. |
 | The Python core is missing | The ledger write does not happen. The proposal stays in `proposed` state. |
-| The ledger write fails | The proposal is marked `failed` and the reason is recorded in its note. |
-| The readback does not confirm the write | The write is reported as unverified. The proposal is still recorded. |
+| The ledger write fails | The command stops with the error. The proposal stays in `proposed` state, so the write can be retried. |
+| The readback does not confirm the write | The proposal is marked `failed` with the detail text, and the command exits with a non-zero status. |
 | The bundle does not verify | The install does not start. |
 | The copy or move during install fails | The staged copy is removed and the backup is moved back. |
 | The smoke test fails | The new bundle is removed and the backup is moved back. The outcome reports `rolledBack`. |
