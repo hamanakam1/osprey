@@ -53,5 +53,5 @@ This is the first public state of Osprey. The entries describe what exists today
 
 ### Build
 
-- Swift 6 package targeting macOS 14 and later, with no third-party dependencies. The standard library and the system SQLite are enough.
-- Continuous integration on macOS 14 and macOS 15, running the build, the tests and the public content guard.
+- A Swift package needing a Swift 6.0 toolchain and targeting macOS 14 and later, with no third-party dependencies. The standard library and the system SQLite are enough.
+- Continuous integration on the macOS 15 image, running the build, the tests and the public content guard.

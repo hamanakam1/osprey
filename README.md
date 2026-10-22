@@ -27,7 +27,7 @@
 
 Osprey is a local-first supervisor for the [Taskrivet](https://github.com/hamanakam1/taskrivet) desktop app. It has two jobs. The first is work capture: Osprey follows the terminal tabs you select, strips ANSI escape sequences, removes secret-shaped text, stores the result in a local SQLite file, and drafts checkpoint and failure records from it. The second is release supervision: Osprey checks a built Taskrivet app bundle, runs its packaged Python core against a throwaway database, backs up the app you have installed, installs the new build, and rolls back if the check fails. Neither job acts on its own. Osprey proposes; the ledger and you decide.
 
-Osprey is written in Swift 6 for macOS 14 and later. It uses the standard library and the system SQLite. It has no third-party dependencies. It makes no network requests, because it contains no networking code.
+Osprey is a Swift package for macOS 14 and later. It needs a Swift 6.0 toolchain, and it compiles its targets in the Swift 5 language mode. It uses the standard library and the system SQLite. It has no third-party dependencies. It makes no network requests, because it contains no networking code.
 
 Status: pre-release. The command surface and the on-disk format may still change.
 
