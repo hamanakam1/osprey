@@ -6,7 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-This is the first public state of Osprey. Nothing has been released yet, so there is no version history below this line. The entries describe what exists today, not a sequence of past releases.
+Nothing yet.
+
+## [0.1.0] - 2026-10-22
+
+This is the first public state of Osprey. The entries describe what exists today, not a sequence of past releases.
 
 ### Work capture
 
