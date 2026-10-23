@@ -127,7 +127,7 @@ Read back the ledger state through the Taskrivet command-line tool. Osprey does 
 2. **List.** Osprey sends `list` and receives one snapshot per tab: identifier, working directory, task, session, shell, state, exit code, process identifier, title, kind, and a bounded output tail.
 3. **Select.** Without `--terminal`, Osprey follows every tab whose state is `running`. With `--terminal <id>`, it follows exactly the tabs you name.
 4. **Read the tail.** The service keeps a bounded tail per tab for reconnecting clients. Osprey takes it first, so a proposal can be drafted even when nothing new arrives.
-5. **Follow.** For `--seconds N` (default 5), Osprey listens for `terminal:data` events and keeps the most recent 256,000 bytes per tab.
+5. **Follow.** For `--seconds N` (default 5), Osprey listens for `terminal:data` events from the selected tabs and keeps the most recent 256,000 bytes per tab. The selection is fixed from the initial list; events from other or newly opened tabs are ignored.
 6. **Redact.** Every chunk goes through ANSI stripping, then the redaction rules. Redaction happens before the write, not after.
 7. **Store.** The redacted text goes into the SQLite evidence store. One row per chunk.
 8. **Draft.** Osprey reads the stored evidence back and produces a checkpoint draft. When the output contains failure text, it produces a failure draft as well.

@@ -84,6 +84,13 @@ The tail is truncated to the capture size limit.
 
 For `--seconds N` (default 5), Osprey listens for `terminal:data` events and accumulates them per tab. The accumulated text for one tab is capped at the capture size limit, and when the cap is reached the oldest text is dropped, because the most recent output is the most useful output.
 
+The selection is fixed from the initial tab list and applies to both the
+buffered tail and live output. Live events whose terminal identifier is
+outside that selection are ignored before accumulation, so their text does
+not enter the evidence store or drafts. Newly opened tabs are outside this
+capture; start another capture to include them. An explicitly named stopped
+tab remains eligible, as described in the selection table above.
+
 `terminal:exit` events end a tab. Osprey records them but does not act on them.
 
 ### 6. Redact

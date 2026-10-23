@@ -57,6 +57,7 @@ public final class CaptureCoordinator {
         guard !selected.isEmpty else {
             throw OspreyError.invalidInput("No Taskrivet tabs matched the selection, so nothing was captured.")
         }
+        let selectedIDs = Set(selected.map(\.id))
 
         var stored = 0
         var bytes = 0
@@ -85,6 +86,7 @@ public final class CaptureCoordinator {
             guard let self else { return }
             switch event {
             case .data(let terminalID, _, let text):
+                guard selectedIDs.contains(terminalID) else { return }
                 self.lock.lock()
                 var combined = (self.live[terminalID] ?? "") + text
                 if combined.utf8.count > self.options.maxBytesPerTerminal {

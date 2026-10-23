@@ -6,7 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- Apply terminal selection to live output as well as buffered tails. Capture
+  now ignores events from unselected or newly opened tabs before accumulating
+  their text, keeping that output out of the evidence store and drafts.
 
 ## [0.1.0] - 2026-10-22
 

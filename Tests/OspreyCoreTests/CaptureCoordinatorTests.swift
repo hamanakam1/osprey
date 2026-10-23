@@ -5,9 +5,9 @@ import Testing
 /// Proves the capture path end to end against a synthetic session service.
 ///
 /// The fixture speaks the same socket protocol as the Taskrivet session
-/// service and reports one tab whose buffered output contains a secret. The
-/// test checks that the secret never reaches the store and that a proposal is
-/// drafted from what is left.
+/// service and reports synthetic tabs, including one whose buffered output
+/// contains a secret. The tests check redaction, proposal drafting and the
+/// boundary between selected tabs and unrelated live events.
 @Suite("Capture")
 final class CaptureCoordinatorTests {
     private var scratch: URL!
@@ -27,7 +27,7 @@ final class CaptureCoordinatorTests {
         try? FileManager.default.removeItem(at: scratch)
     }
 
-    private func startFixtureService() throws -> URL {
+    private func startFixtureService(selectionScenario: Bool = false) throws -> URL {
         guard let python = LedgerClient.findPython() else {
             throw OspreyError.taskrivetUnavailable("No Python 3.11 or newer interpreter is available.")
         }
@@ -40,6 +40,7 @@ final class CaptureCoordinatorTests {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: python)
         process.arguments = [fixture.path, runtime.path]
+        if selectionScenario { process.arguments?.append("--selection") }
         let errorPipe = Pipe()
         process.standardOutput = Pipe()
         process.standardError = errorPipe
@@ -87,6 +88,60 @@ final class CaptureCoordinatorTests {
         #expect(proposal.session == "ses_fixture")
         #expect(proposal.summary.contains("make build") == true)
         #expect(proposal.note?.contains("Not verified progress") == true)
+    }
+
+    @Test("named capture ignores other tabs and unknown or malformed event identifiers")
+    func namedCaptureKeepsOnlySelectedTabs() throws {
+        try assertCaptureSelection(
+            ["term-fixture-1", "term-fixture-new"],
+            expected: ["term-fixture-1"]
+        )
+    }
+
+    @Test("default capture keeps only tabs that were running when listed")
+    func defaultCaptureKeepsOnlyRunningTabs() throws {
+        try assertCaptureSelection(nil, expected: ["term-fixture-1", "term-fixture-2"])
+    }
+
+    @Test("an empty selection keeps only tabs that were running when listed")
+    func emptySelectionKeepsOnlyRunningTabs() throws {
+        try assertCaptureSelection([], expected: ["term-fixture-1", "term-fixture-2"])
+    }
+
+    @Test("a stopped tab can still be selected explicitly")
+    func namedCaptureCanKeepAStoppedTab() throws {
+        try assertCaptureSelection(["term-fixture-stopped"], expected: ["term-fixture-stopped"])
+    }
+
+    private func assertCaptureSelection(_ terminalIDs: Set<String>?, expected: Set<String>) throws {
+        let socket = try startFixtureService(selectionScenario: true)
+        let token = try SessionTokenReader.read(at: socket.deletingLastPathComponent().appendingPathComponent("token"))
+        let client = TaskrivetSessionClient(socketURL: socket, token: token)
+        var options = CaptureCoordinator.Options()
+        options.terminalIDs = terminalIDs
+        options.seconds = 2
+        let summary = try CaptureCoordinator(store: store, client: client, options: options).run()
+
+        #expect(Set(summary.terminals.map(\.id)) == expected)
+        #expect(Set(summary.proposals.map(\.terminalID)) == expected)
+        #expect(Set(try store.proposals().map(\.terminalID)) == expected)
+
+        var selectedRecordCount = 0
+        for id in expected {
+            let evidence = try store.evidence(forTerminal: id)
+            selectedRecordCount += evidence.count
+            let text = evidence.map(\.text).joined(separator: "\n")
+            #expect(text.contains("live output from \(id)"))
+        }
+        // The reader omits malformed rows with empty terminal identifiers, so
+        // check the raw row count as well as the per-terminal evidence.
+        #expect(try store.evidenceCount() == selectedRecordCount)
+        let emittedIDs: Set<String> = [
+            "term-fixture-1", "term-fixture-2", "term-fixture-stopped", "term-fixture-new", "",
+        ]
+        for id in emittedIDs.subtracting(expected) {
+            #expect(try store.evidence(forTerminal: id).isEmpty, "Unexpected evidence for terminal '\(id)'")
+        }
     }
 
     @Test("a wrong token is refused")
