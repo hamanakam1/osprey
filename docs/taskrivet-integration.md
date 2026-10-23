@@ -144,6 +144,13 @@ After the command exits successfully, Osprey reads the session back from the led
 
 The result is reported as verified or not. Both the command line and the menu bar mark a verified proposal `applied`. When readback does not confirm the write, they mark the proposal `failed`, leave its applied time unset, and retain the verification detail in its note. The menu displays a failure message. A failed verification does not mean the ledger write was undone; inspect the ledger before approving again. Osprey does not retry, and it does not write twice.
 
+Saving that outcome must update an existing local proposal. If the proposal
+was removed before or during the state update, Osprey does not recreate it.
+The command line and menu bar report that no local outcome was recorded,
+without claiming that the proposal was applied or marked failed. SQLite
+update failures also surface as storage errors. The ledger may already
+contain the record; inspect it before retrying.
+
 Every ledger command, including status reads, must exit with status zero
 before Osprey uses its output. A nonzero exit raises a command error even
 when stdout contains valid JSON or the session's previous state already

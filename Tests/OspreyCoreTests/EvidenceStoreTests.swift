@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import Testing
 @testable import OspreyCore
 
@@ -80,6 +81,72 @@ final class EvidenceStoreTests {
         let applied = try store.proposal(id: proposal.id)
         #expect(applied?.note == "verified")
         #expect(applied?.appliedAt != nil)
+    }
+
+    private func fixtureProposal() -> Proposal {
+        Proposal(
+            id: "proposal-001", kind: .checkpoint, terminalID: "terminal-001",
+            terminalTitle: "Synthetic tab", session: "session-001", task: "task-001",
+            summary: "Synthetic proposal", evidence: "Synthetic evidence", next: "Review the result"
+        )
+    }
+
+    private func executeFixtureSQL(_ sql: String) throws {
+        var database: OpaquePointer?
+        guard sqlite3_open_v2(store.url.path, &database, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK else {
+            sqlite3_close(database)
+            throw OspreyError.storeFailure("Could not open the synthetic fixture database.")
+        }
+        defer { sqlite3_close(database) }
+        guard sqlite3_exec(database, sql, nil, nil, nil) == SQLITE_OK else {
+            throw OspreyError.storeFailure("Could not install the synthetic fixture trigger.")
+        }
+    }
+
+    @Test("an absent proposal remains absent when its state is changed")
+    func absentProposalRemainsAbsent() throws {
+        #expect(try store.setProposalState(id: "proposal-missing", state: .applied) == nil)
+        #expect(try store.proposals().isEmpty)
+    }
+
+    @Test("a proposal disappearing during its state change is not recreated")
+    func disappearingProposalIsNotRecreated() throws {
+        let proposal = fixtureProposal()
+        try store.save(proposal)
+        // Delete at the mutation boundary for either implementation: replacing
+        // inserts recreate the row, while an update must report no matching row.
+        try executeFixtureSQL("""
+            CREATE TRIGGER disappear_before_insert BEFORE INSERT ON proposals
+            BEGIN DELETE FROM proposals WHERE id = NEW.id; END;
+            CREATE TRIGGER disappear_before_update BEFORE UPDATE ON proposals
+            BEGIN
+                DELETE FROM proposals WHERE id = OLD.id;
+                SELECT RAISE(IGNORE);
+            END;
+            """)
+        let updated = try store.setProposalState(id: proposal.id, state: .applied, note: "Synthetic confirmation")
+        #expect(updated == nil)
+        let reopened = try EvidenceStore(url: store.url)
+        #expect(try reopened.proposal(id: proposal.id) == nil)
+    }
+
+    @Test("a state update error is thrown rather than reported as a missing proposal")
+    func failedStateUpdateThrows() throws {
+        let proposal = fixtureProposal()
+        try store.save(proposal)
+        try executeFixtureSQL("""
+            CREATE TRIGGER reject_state_update BEFORE UPDATE ON proposals
+            BEGIN SELECT RAISE(ABORT, 'synthetic update failure'); END;
+            """)
+        do {
+            _ = try store.setProposalState(id: proposal.id, state: .applied)
+            Issue.record("A rejected update must throw a storage error.")
+        } catch OspreyError.storeFailure(let message) {
+            #expect(message.contains("synthetic update failure"))
+        }
+        let readback = try store.proposal(id: proposal.id)
+        #expect(readback?.state == .proposed)
+        #expect(readback?.appliedAt == nil)
     }
 
     @Test("receipts are kept newest first")

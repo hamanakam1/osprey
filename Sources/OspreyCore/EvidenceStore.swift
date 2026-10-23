@@ -108,7 +108,8 @@ public final class EvidenceStore {
             sqlite3_bind_text(statement, Int32(index + 1), value, -1, SQLITE_TRANSIENT)
         }
         var rows: [[String: String]] = []
-        while sqlite3_step(statement) == SQLITE_ROW {
+        var result = sqlite3_step(statement)
+        while result == SQLITE_ROW {
             var row: [String: String] = [:]
             for column in 0..<sqlite3_column_count(statement) {
                 let name = String(cString: sqlite3_column_name(statement, column))
@@ -119,6 +120,11 @@ public final class EvidenceStore {
                 }
             }
             rows.append(row)
+            result = sqlite3_step(statement)
+        }
+        guard result == SQLITE_DONE else {
+            let message = String(cString: sqlite3_errmsg(handle))
+            throw OspreyError.storeFailure("Statement failed: \(message)")
         }
         return rows
     }
@@ -244,8 +250,19 @@ public final class EvidenceStore {
         proposal.state = state
         if state == .applied { proposal.appliedAt = Date() }
         if let note { proposal.note = note }
-        try save(proposal)
-        return proposal
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let json = String(data: try encoder.encode(proposal), encoding: .utf8) ?? "{}"
+        let updated = try query(
+            "UPDATE proposals SET state = ?, applied_at = ?, json = ? WHERE id = ? RETURNING id;",
+            [
+                proposal.state.rawValue,
+                proposal.appliedAt.map { String($0.timeIntervalSince1970) } ?? "",
+                json,
+                id,
+            ]
+        )
+        return updated.isEmpty ? nil : proposal
     }
 
     // MARK: - Receipts

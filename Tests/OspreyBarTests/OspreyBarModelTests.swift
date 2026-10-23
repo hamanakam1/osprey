@@ -25,7 +25,17 @@ struct OspreyBarModelTests {
         try assertApproval(kind: .failure, verified: true)
     }
 
-    private func assertApproval(kind: ProposalKind, verified: Bool) throws {
+    @Test("a verified ledger result cannot complete a missing local proposal")
+    func missingVerifiedProposalFails() throws {
+        try assertApproval(kind: .checkpoint, verified: true, saved: false)
+    }
+
+    @Test("an unverified ledger result cannot claim a missing proposal was marked failed")
+    func missingUnverifiedProposalFails() throws {
+        try assertApproval(kind: .checkpoint, verified: false, saved: false)
+    }
+
+    private func assertApproval(kind: ProposalKind, verified: Bool, saved: Bool = true) throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("osprey-menu-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -42,7 +52,7 @@ struct OspreyBarModelTests {
             evidence: "Synthetic evidence",
             next: "Review the result"
         )
-        try store.save(proposal)
+        if saved { try store.save(proposal) }
         let result = LedgerClient.ApplyResult(
             sessionID: "session-001",
             status: kind == .checkpoint ? "active" : "failed",
@@ -55,6 +65,16 @@ struct OspreyBarModelTests {
         // whose initial refresh resolves the operator's real local paths.
         let outcome = try OspreyBarModel.finishApproval(proposal, result: result, store: store)
         let action = OspreyBarModel.Action(proposalID: proposal.id, outcome: outcome, when: Date())
+        if !saved {
+            #expect(action.isFailure)
+            #expect(action.message.contains("no longer in the Osprey store"))
+            #expect(action.message.contains("may already"))
+            #expect(action.message.contains("before retrying"))
+            #expect(!action.message.contains("marked failed"))
+            let reopened = try EvidenceStore(url: database)
+            #expect(try reopened.proposal(id: proposal.id) == nil)
+            return
+        }
         #expect(action.isFailure == !verified)
         #expect(action.message.contains(result.detail))
 

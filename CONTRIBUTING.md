@@ -99,7 +99,7 @@ It does not check the source tree, so read your own diff.
 swift test
 ```
 
-Core tests live in `Tests/OspreyCoreTests/`, and menu-bar behaviour tests live in `Tests/OspreyBarTests/`. They must not need a running Taskrivet, a network, or a real ledger. Where a test needs a filesystem, use a temporary directory, and set `OSPREY_HOME` where the state directory is involved. Menu-bar tests exercise the approval result handler with a temporary evidence store without launching the app or loading the operator's state.
+Core tests live in `Tests/OspreyCoreTests/`, menu-bar behaviour tests in `Tests/OspreyBarTests/`, and command-line behaviour tests in `Tests/OspreyCLITests/`. They must not need a running Taskrivet, a network, or a real ledger. Where a test needs a filesystem, use a temporary directory, and set `OSPREY_HOME` where the state directory is involved. Approval result tests exercise the handlers with temporary evidence stores without launching the app or loading the operator's state.
 
 If you change the redaction rules, test each rule and test that the order of the rules still matters. If you change the release manager, test the failure paths, not only the happy path. The whole point of the release manager is what happens when something goes wrong.
 

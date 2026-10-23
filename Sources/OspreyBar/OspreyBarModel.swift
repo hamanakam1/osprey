@@ -174,7 +174,7 @@ final class OspreyBarModel: ObservableObject {
             return try Self.finishApproval(proposal, result: result, store: store)
         } catch {
             return .failure(
-                "The ledger accepted the record, but the Osprey store could not be updated: \(describe(error))"
+                "The ledger may already contain the record, but the Osprey store could not be updated: \(describe(error))"
             )
         }
     }
@@ -188,7 +188,12 @@ final class OspreyBarModel: ObservableObject {
         let note = result.verified
             ? "Approved from the Osprey menu bar on \(Self.timestamp())."
             : result.detail
-        _ = try store.setProposalState(id: proposal.id, state: result.verified ? .applied : .failed, note: note)
+        let updated = try store.setProposalState(id: proposal.id, state: result.verified ? .applied : .failed, note: note)
+        guard updated != nil else {
+            return .failure(
+                "That proposal is no longer in the Osprey store, so no local approval outcome was recorded. The ledger may already contain the record. Inspect the ledger before retrying."
+            )
+        }
         if result.verified {
             return .success("Applied to session \(result.sessionID). \(result.detail)")
         }

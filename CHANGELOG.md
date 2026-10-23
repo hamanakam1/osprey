@@ -8,6 +8,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Refuse to report an approval outcome when its proposal is missing from the
+  local store. State updates no longer recreate proposals removed during an
+  update, and SQLite update errors are reported instead of treated as missing
+  records. The command line and menu bar explain that the ledger write may
+  still have happened.
 - Apply terminal selection to live output as well as buffered tails. Capture
   now ignores events from unselected or newly opened tabs before accumulating
   their text, keeping that output out of the evidence store and drafts.

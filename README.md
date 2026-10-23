@@ -74,6 +74,8 @@ Status: pre-release. The command surface and the on-disk format may still change
 
 An approval is marked `applied` only when the ledger readback confirms the write. If the readback does not match, the menu shows a failure and records the proposal as `failed`, with the verification detail in its note and no applied time. Inspect the ledger before approving again; the write may have happened even when verification failed.
 
+If the proposal is missing when its local outcome is saved, approval reports a storage failure instead of claiming that it was applied or marked failed. State updates do not recreate removed proposals. The ledger write may already have happened, so inspect the ledger before retrying.
+
 ## What it does not do
 
 This list is deliberate. Most of these are things a supervisor tool is expected to do, and Osprey does not do them.
@@ -298,7 +300,7 @@ OSPREY_HOME="$(mktemp -d)" .build/debug/osprey status
 
 The public content guard checks that the documentation and the repository scaffolding contain no credential-shaped text, no absolute home directory paths, and no links to places other than the allowlist. It runs in CI.
 
-Core tests live in `Tests/OspreyCoreTests/`, and menu-bar behaviour tests live in `Tests/OspreyBarTests/`. A change in behaviour needs a test that fails without the change.
+Core tests live in `Tests/OspreyCoreTests/`, menu-bar behaviour tests in `Tests/OspreyBarTests/`, and command-line behaviour tests in `Tests/OspreyCLITests/`. A change in behaviour needs a test that fails without the change.
 
 ## Troubleshooting
 

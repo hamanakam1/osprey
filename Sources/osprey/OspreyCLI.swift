@@ -369,11 +369,21 @@ struct OspreyCLI {
 
         let ledger = LedgerClient(database: database(), coreRoot: TaskrivetLocator.coreRoot())
         let result = try ledger.apply(proposal: proposal, tokens: options.value("tokens").flatMap(Int.init))
-        try store.setProposalState(id: id, state: result.verified ? .applied : .failed, note: result.detail)
+        try Self.finishApproval(id: id, result: result, store: store)
         print(result.detail)
         if !result.verified {
             printError("The write was not confirmed by a ledger readback. The proposal is marked failed.")
             exit(2)
+        }
+    }
+
+    /// Persists the approval outcome before the command reports it.
+    static func finishApproval(id: String, result: LedgerClient.ApplyResult, store: EvidenceStore) throws {
+        let updated = try store.setProposalState(id: id, state: result.verified ? .applied : .failed, note: result.detail)
+        guard updated != nil else {
+            throw OspreyError.storeFailure(
+                "That proposal is no longer in the Osprey store, so no local approval outcome was recorded. The ledger may already contain the record. Inspect the ledger before retrying."
+            )
         }
     }
 
