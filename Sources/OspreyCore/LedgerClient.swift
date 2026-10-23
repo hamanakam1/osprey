@@ -196,7 +196,12 @@ public final class LedgerClient {
         argv.append(contentsOf: arguments)
         var environment = ProcessInfo.processInfo.environment
         environment["PYTHONPATH"] = coreRoot.path
-        return try Self.run(argv, environment: environment, workingDirectory: coreRoot, fileManager: fileManager)
+        let result = try Self.run(argv, environment: environment, workingDirectory: coreRoot, fileManager: fileManager)
+        guard result.status == 0 else {
+            let command = arguments.first ?? "ledger"
+            throw LedgerError.commandFailed("The Taskrivet \(command) command failed with exit status \(result.status).")
+        }
+        return result
     }
 
     struct CommandResult {

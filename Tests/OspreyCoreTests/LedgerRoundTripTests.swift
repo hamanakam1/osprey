@@ -48,6 +48,110 @@ struct LedgerRoundTripTests {
         return try JSONSerialization.jsonObject(with: result.stdout) as? [String: Any] ?? [:]
     }
 
+    private func startSession(core: URL, database: URL, python: String) throws -> String {
+        _ = try runTaskrivet([
+            "task-add", "fixture-rejection",
+            "--objective", "Reject an unsuccessful ledger command",
+            "--acceptance", "A failed command cannot report verified success",
+            "--scope", "fixture-rejection",
+        ], core: core, database: database, python: python)
+        let started = try runTaskrivet(
+            ["start", "fixture-rejection", "--owner", "osprey-test"],
+            core: core, database: database, python: python
+        )
+        return try #require(started["session_id"] as? String)
+    }
+
+    private func rejectCommand(_ command: String, database: URL, stdout: [String: Any]) throws {
+        var payload = stdout
+        payload["fixture_detail"] = "fixture-stdout-private"
+        let control: [String: Any] = [
+            "command": command,
+            "status": 73,
+            "stdout": payload,
+            "stderr": "fixture-stderr-private",
+        ]
+        try JSONSerialization.data(withJSONObject: control)
+            .write(to: URL(fileURLWithPath: database.path + ".failure.json"))
+    }
+
+    private func expectCommandFailure(
+        _ command: String,
+        database: URL,
+        sessionID: String,
+        operation: () throws -> Void
+    ) {
+        do {
+            try operation()
+            Issue.record("An unsuccessful \(command) command must throw instead of returning success.")
+        } catch LedgerClient.LedgerError.commandFailed(let message) {
+            #expect(message.contains(command))
+            #expect(message.contains("73"))
+            for excluded in [database.path, sessionID, "fixture-stdout-private", "fixture-stderr-private", "fixture-proposal-private"] {
+                #expect(!message.contains(excluded))
+            }
+        } catch {
+            Issue.record("Expected LedgerError.commandFailed, got \(error).")
+        }
+    }
+
+    @Test("a rejected checkpoint cannot be verified by an unchanged token count")
+    func rejectedCheckpointCannotUseStaleReadback() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.core.deletingLastPathComponent()) }
+        let sessionID = try startSession(core: fixture.core, database: fixture.database, python: fixture.python)
+        let client = LedgerClient(database: fixture.database, coreRoot: fixture.core, python: fixture.python)
+        let proposal = Proposal(
+            kind: .checkpoint, terminalID: "term-1", terminalTitle: "A tab",
+            session: sessionID, task: "fixture-rejection", summary: "fixture-proposal-private",
+            evidence: "Synthetic checkpoint evidence", next: "Review the result"
+        )
+        #expect(try client.apply(proposal: proposal, tokens: 120).verified)
+        #expect(try client.session(id: sessionID)?.tokens == 120)
+        try rejectCommand("checkpoint", database: fixture.database, stdout: ["status": "active", "tokens": 120])
+
+        expectCommandFailure("checkpoint", database: fixture.database, sessionID: sessionID) {
+            _ = try client.apply(proposal: proposal)
+        }
+        #expect(try client.session(id: sessionID)?.tokens == 120)
+    }
+
+    @Test("a rejected failure record cannot be verified by an already failed session")
+    func rejectedFailureCannotUseStaleReadback() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.core.deletingLastPathComponent()) }
+        let sessionID = try startSession(core: fixture.core, database: fixture.database, python: fixture.python)
+        let client = LedgerClient(database: fixture.database, coreRoot: fixture.core, python: fixture.python)
+        let proposal = Proposal(
+            kind: .failure, terminalID: "term-1", terminalTitle: "A tab",
+            session: sessionID, task: "fixture-rejection", summary: "fixture-proposal-private",
+            evidence: "Synthetic failure evidence", next: "Review the result", category: "terminal_output"
+        )
+        #expect(try client.apply(proposal: proposal).verified)
+        #expect(try client.session(id: sessionID)?.status == "failed")
+        try rejectCommand("fail", database: fixture.database, stdout: ["status": "failed"])
+
+        expectCommandFailure("fail", database: fixture.database, sessionID: sessionID) {
+            _ = try client.apply(proposal: proposal)
+        }
+        #expect(try client.session(id: sessionID)?.status == "failed")
+    }
+
+    @Test("an unsuccessful status command is rejected even when it prints plausible JSON")
+    func unsuccessfulStatusCannotUsePlausibleJSON() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.core.deletingLastPathComponent()) }
+        let sessionID = try startSession(core: fixture.core, database: fixture.database, python: fixture.python)
+        let client = LedgerClient(database: fixture.database, coreRoot: fixture.core, python: fixture.python)
+        try rejectCommand("status", database: fixture.database, stdout: [
+            "sessions": [["id": sessionID, "task_id": "fixture-rejection", "tokens": 0, "status": "active"]],
+        ])
+
+        expectCommandFailure("status", database: fixture.database, sessionID: sessionID) {
+            _ = try client.status()
+        }
+    }
+
     @Test("a checkpoint is written and read back")
     func checkpointIsWrittenAndReadBack() throws {
         let fixture = try makeFixture()

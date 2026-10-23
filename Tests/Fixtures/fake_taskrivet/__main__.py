@@ -52,6 +52,14 @@ def main(argv):
         index += 1
 
     require(command, "a command")
+    failure_path = database + ".failure.json"
+    if os.path.exists(failure_path):
+        with open(failure_path) as handle:
+            failure = json.load(handle)
+        if failure["command"] == command:
+            print(json.dumps(failure["stdout"]))
+            print(failure["stderr"], file=sys.stderr)
+            raise SystemExit(failure["status"])
     connection = open_db(database)
 
     if command == "task-add":

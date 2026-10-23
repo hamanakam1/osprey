@@ -135,7 +135,7 @@ The argument vector is built directly. There is no shell, so a summary or an evi
 
 ### Verifying the write
 
-After the command returns, Osprey reads the session back from the ledger and compares:
+After the command exits successfully, Osprey reads the session back from the ledger and compares:
 
 | Proposal | Confirmed when |
 | --- | --- |
@@ -143,6 +143,14 @@ After the command returns, Osprey reads the session back from the ledger and com
 | Failure | The readback reports the status `failed`. |
 
 The result is reported as verified or not. An unverified write is still recorded, and the reason is in the detail text. Osprey does not retry, and it does not write twice.
+
+Every ledger command, including status reads, must exit with status zero
+before Osprey uses its output. A nonzero exit raises a command error even
+when stdout contains valid JSON or the session's previous state already
+matches the expected token count or failure status. The error identifies the
+operation and exit status without including proposal text or raw subprocess
+output. Osprey does not retry automatically. A failed command may have changed
+the ledger before exiting; inspect its state before approving again.
 
 ### Token counts
 
@@ -205,4 +213,5 @@ It takes the first whose version is 3.11 or newer. The ledger and the release sm
 | The token is empty | The token is not read. |
 | The core is missing | The ledger write does not happen. |
 | Python is missing | The ledger write does not happen. |
+| A ledger command exits nonzero | Osprey reports the operation and exit status and stops. Its output is not treated as a successful read or confirmed write. |
 | The terminal has no ledger session | The proposal cannot be applied, and says why. |

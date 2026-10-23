@@ -11,6 +11,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Apply terminal selection to live output as well as buffered tails. Capture
   now ignores events from unselected or newly opened tabs before accumulating
   their text, keeping that output out of the evidence store and drafts.
+- Reject ledger commands that exit nonzero before using their output. A
+  failed checkpoint or failure record can no longer appear verified because
+  the session's previous token count or status already matches the request.
 
 ## [0.1.0] - 2026-10-22
 
