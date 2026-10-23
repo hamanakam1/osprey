@@ -121,7 +121,7 @@ Osprey does not open the ledger database itself. It has no SQLite connection to 
 
 ### Writing
 
-A write happens only after `osprey approve <id>`.
+A write happens only after an explicit approval: `osprey approve <id> --yes` or the menu bar's Approve action.
 
 ```text
 <python> -m taskrivet --db <ledger path> checkpoint <session> \
@@ -142,7 +142,7 @@ After the command exits successfully, Osprey reads the session back from the led
 | Checkpoint | The readback reports the same token count that was written. |
 | Failure | The readback reports the status `failed`. |
 
-The result is reported as verified or not. An unverified write is still recorded, and the reason is in the detail text. Osprey does not retry, and it does not write twice.
+The result is reported as verified or not. Both the command line and the menu bar mark a verified proposal `applied`. When readback does not confirm the write, they mark the proposal `failed`, leave its applied time unset, and retain the verification detail in its note. The menu displays a failure message. A failed verification does not mean the ledger write was undone; inspect the ledger before approving again. Osprey does not retry, and it does not write twice.
 
 Every ledger command, including status reads, must exit with status zero
 before Osprey uses its output. A nonzero exit raises a command error even

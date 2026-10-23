@@ -72,6 +72,8 @@ Status: pre-release. The command surface and the on-disk format may still change
 
 `OspreyBar` is a small SwiftUI menu-bar app. It shows how many proposals are waiting, how much evidence is stored, and which Taskrivet build is installed. You can approve or withdraw a proposal from the menu. Nothing happens on its own.
 
+An approval is marked `applied` only when the ledger readback confirms the write. If the readback does not match, the menu shows a failure and records the proposal as `failed`, with the verification detail in its note and no applied time. Inspect the ledger before approving again; the write may have happened even when verification failed.
+
 ## What it does not do
 
 This list is deliberate. Most of these are things a supervisor tool is expected to do, and Osprey does not do them.
@@ -296,7 +298,7 @@ OSPREY_HOME="$(mktemp -d)" .build/debug/osprey status
 
 The public content guard checks that the documentation and the repository scaffolding contain no credential-shaped text, no absolute home directory paths, and no links to places other than the allowlist. It runs in CI.
 
-Tests live in `Tests/OspreyCoreTests/`. A change in behaviour needs a test that fails without the change.
+Core tests live in `Tests/OspreyCoreTests/`, and menu-bar behaviour tests live in `Tests/OspreyBarTests/`. A change in behaviour needs a test that fails without the change.
 
 ## Troubleshooting
 

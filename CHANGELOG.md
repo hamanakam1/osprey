@@ -14,6 +14,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Reject ledger commands that exit nonzero before using their output. A
   failed checkpoint or failure record can no longer appear verified because
   the session's previous token count or status already matches the request.
+- Treat an unverified menu-bar approval as failed, matching the command line.
+  Keep the verification detail in the proposal note, leave its applied time
+  unset, and show a failure message instead of success.
 
 ## [0.1.0] - 2026-10-22
 

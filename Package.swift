@@ -29,5 +29,10 @@ let package = Package(
             dependencies: ["OspreyCore"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
+        .testTarget(
+            name: "OspreyBarTests",
+            dependencies: ["OspreyBar", "OspreyCore"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
     ]
 )

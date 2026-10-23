@@ -171,18 +171,29 @@ final class OspreyBarModel: ObservableObject {
         }
         do {
             let store = try openStore()
-            let note = "Approved from the Osprey menu bar on \(Self.timestamp())."
-            _ = try store.setProposalState(id: proposal.id, state: .applied, note: note)
+            return try Self.finishApproval(proposal, result: result, store: store)
         } catch {
             return .failure(
                 "The ledger accepted the record, but the Osprey store could not be updated: \(describe(error))"
             )
         }
+    }
+
+    /// Records a ledger result and provides the outcome shown by the menu.
+    static func finishApproval(
+        _ proposal: Proposal,
+        result: LedgerClient.ApplyResult,
+        store: EvidenceStore
+    ) throws -> Action.Outcome {
+        let note = result.verified
+            ? "Approved from the Osprey menu bar on \(Self.timestamp())."
+            : result.detail
+        _ = try store.setProposalState(id: proposal.id, state: result.verified ? .applied : .failed, note: note)
         if result.verified {
             return .success("Applied to session \(result.sessionID). \(result.detail)")
         }
-        return .success(
-            "Written to session \(result.sessionID) (status \(result.status)), but not verified. \(result.detail)"
+        return .failure(
+            "The write to session \(result.sessionID) was not confirmed by a ledger readback. The proposal is marked failed. \(result.detail)"
         )
     }
 
