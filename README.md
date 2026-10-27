@@ -89,6 +89,34 @@ This list is deliberate. Most of these are things a supervisor tool is expected 
 
 ## Architecture
 
+```mermaid
+flowchart TD
+    subgraph App["Taskrivet Desktop Application"]
+        TERM["<b>Terminal Sessions</b><br/><i>(tabs & data stream)</i>"]
+        SOCK["<b>Session Socket</b><br/><i>Unix stream (0600)</i>"]
+        TERM --> SOCK
+    end
+
+    subgraph Osprey["Osprey Supervisor (Swift 6)"]
+        direction TB
+        CC["<b>Capture Coordinator</b><br/><i>hello & list tabs</i>"]
+        RED["<b>Redaction Engine</b><br/><i>ANSI strip & secret mask</i>"]
+        DB[("<b>Evidence Store</b><br/><i>~/.osprey/evidence.sqlite</i>")]
+        PE["<b>Proposal Engine</b><br/><i>Draft checkpoints & failures</i>"]
+
+        CC --> RED --> DB --> PE
+    end
+
+    subgraph Person["Human Review & Ledger"]
+        CLI["<b>Operator CLI / Menu Bar</b><br/><code>osprey approve &lt;id&gt; --yes</code>"]
+        LEDGER[("<b>Taskrivet Ledger</b><br/><i>Immutable evidence record</i>")]
+        PE -->|Pending drafts| CLI
+        CLI -->|Explicit approval| LEDGER
+    end
+
+    SOCK --> CC
+```
+
 ### Components
 
 | Component | File | Responsibility |
