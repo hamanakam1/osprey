@@ -47,6 +47,18 @@ struct PathsTests {
         #expect(overridden.path == "/tmp/osprey-home")
     }
 
+    @Test("the installed application path can be overridden")
+    func installedApplicationCanBeOverridden() {
+        let overridden = TaskrivetLocator.installedApplication(environment: ["TASKRIVET_APP": "/tmp/Custom.app"])
+        #expect(overridden.path == "/tmp/Custom.app")
+    }
+
+    @Test("the default installed application is Taskrivet.app")
+    func installedApplicationHasTheDefaultName() {
+        let application = TaskrivetLocator.installedApplication(environment: [:])
+        #expect(application.lastPathComponent == "Taskrivet.app")
+    }
+
     @Test("the core root search paths are reported")
     func coreRootSearchPathsAreReported() {
         let paths = TaskrivetLocator.coreRootSearchPaths(environment: [:]).map(\.path)

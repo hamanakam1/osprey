@@ -91,6 +91,22 @@ public enum TaskrivetLocator {
         runtimeDirectory.appendingPathComponent("token")
     }
 
+    /// The installed Taskrivet application bundle.
+    ///
+    /// `TASKRIVET_APP` wins. Otherwise Osprey looks for `Taskrivet.app` in
+    /// the usual local place, and reports what it tried.
+    public static func installedApplication(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        fileManager: FileManager = .default
+    ) -> URL {
+        if let override = environment["TASKRIVET_APP"], !override.isEmpty {
+            return URL(fileURLWithPath: (override as NSString).expandingTildeInPath).standardizedFileURL
+        }
+        return fileManager.homeDirectoryForCurrentUser
+            .appendingPathComponent("Applications", isDirectory: true)
+            .appendingPathComponent("Taskrivet.app", isDirectory: true)
+    }
+
     /// The Python package root that contains the `taskrivet` module.
     ///
     /// `TASKRIVET_CORE` wins. Otherwise Osprey looks in the usual local places,

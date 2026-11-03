@@ -46,6 +46,13 @@ struct OspreyCLI {
 
     private func database() -> URL { TaskrivetLocator.ledgerDatabase() }
 
+    private func installedApplicationPath(_ options: OptionSet) -> URL {
+        if let override = options.value("app"), !override.isEmpty {
+            return URL(fileURLWithPath: (override as NSString).expandingTildeInPath).standardizedFileURL
+        }
+        return TaskrivetLocator.installedApplication()
+    }
+
     private func coreRoot() throws -> URL {
         guard let root = TaskrivetLocator.coreRoot() else {
             throw OspreyError.taskrivetUnavailable(
@@ -428,7 +435,7 @@ struct OspreyCLI {
             check("evidence-store", false, "\(error)")
         }
 
-        let release = ReleaseManager()
+        let release = ReleaseManager(installedPath: installedApplicationPath(options))
         if let report = try? release.verify(bundle: release.installedPath) {
             check("taskrivet-build", report.isUsable, "\(report.version) at \(report.path)")
         } else {
@@ -471,7 +478,7 @@ struct OspreyCLI {
     }
 
     private func runRelease(_ options: OptionSet) throws {
-        let release = ReleaseManager()
+        let release = ReleaseManager(installedPath: installedApplicationPath(options))
         switch options.positional.first {
         case "verify":
             guard let bundle = options.value("bundle") else {

@@ -231,14 +231,14 @@ To install a release:
 | `osprey show <proposal-id>` | Show one proposal in full, as JSON. |
 | `osprey approve <proposal-id> [--tokens N] [--yes]` | Write an approved proposal to the Taskrivet ledger, then read the session back to confirm it. Without `--yes` it prints what it would write and stops. |
 | `osprey withdraw <proposal-id> [--reason R]` | Mark a proposal withdrawn, with a reason. |
-| `osprey doctor` | Check Python, the Taskrivet core, the session socket, the token permissions, the store, and the installed build. |
-| `osprey redact [text...]` | Show what the redaction rules do to a string. |
-| `osprey privacy purge [--older-than DAYS]` | Delete stored evidence older than `DAYS`. The default is 7 days. |
-| `osprey release verify --bundle PATH` | Check a built app bundle and report what is wrong with it. |
-| `osprey release install --bundle PATH [--no-smoke-test]` | Back up the installed app, install the new bundle, smoke test it, and roll back on failure. |
-| `osprey release rollback [--backup PATH]` | Restore a previous build. |
+| `osprey doctor` | Check Python, the Taskrivet core, the session socket, the token permissions, the store, and the installed build. Accepts `--app <path>` and the `TASKRIVET_APP` environment variable. |
+| `osprey release verify --bundle PATH` | Check a built app bundle and report what is wrong with it. Accepts `--app <path>` for the installed bundle. |
+| `osprey release install --bundle PATH [--no-smoke-test]` | Back up the installed app, install the new bundle, smoke test it, and roll back on failure. Accepts `--app <path>`. |
+| `osprey release rollback [--backup PATH]` | Restore a previous build. Accepts `--app <path>`. |
 | `osprey release backups` | List the backups that can be restored. |
 | `osprey release receipts` | List the release receipts. |
+| `osprey redact [text...]` | Show what the redaction rules do to a string. |
+| `osprey privacy purge [--older-than DAYS]` | Delete stored evidence older than `DAYS`. The default is 7 days. |
 | `osprey help` | Print the command list. |
 | `osprey version` | Print the version. |
 
@@ -255,6 +255,7 @@ Configuration is environment variables only. There is no configuration file.
 | `OSPREY_HOME` | Where Osprey keeps its state. Defaults to `~/.osprey`. |
 | `TASKRIVET_DB` | The Taskrivet ledger database. Defaults to `~/.taskrivet/ledger.sqlite`. |
 | `TASKRIVET_CORE` | The folder that contains the `taskrivet` Python package. Without it, Osprey searches the usual local places. |
+| `TASKRIVET_APP` | The Taskrivet application bundle Osprey checks and installs. Defaults to `~/Applications/Taskrivet.app`. Use it when the app you run has a different name. |
 
 ## Privacy and retention
 
